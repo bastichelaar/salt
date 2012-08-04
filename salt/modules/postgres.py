@@ -81,7 +81,7 @@ def _psql_cmd(*args, **kwargs):
     if port is not None:
         cmd += ['--port', port]
     cmd += args
-    cmdstr = ' '.join(map(pipes.quote, cmd))
+    cmdstr = " ".join(map(pipes.quote, cmd))
     return cmdstr
 
 
@@ -168,11 +168,11 @@ def db_create(name,
             return False
 
     # Base query to create a database
-    query = 'CREATE DATABASE {0}'.format(name)
+    query = 'CREATE DATABASE "{0}"'.format(name)
 
     # "With"-options to create a database
     with_args = {
-        'OWNER': owner,
+        'OWNER': owner and '"{0}"'.format(owner),
         'TEMPLATE': template,
         'ENCODING': encoding and "'{0}'".format(encoding),
         'LC_COLLATE': lc_collate and "'{0}'".format(lc_collate),
@@ -216,7 +216,7 @@ def db_remove(name, user=None, host=None, port=None, runas=None):
         return False
 
     # db doesnt exist, proceed
-    query = 'DROP DATABASE {0}'.format(name)
+    query = 'DROP DATABASE "{0}"'.format(name)
     cmd = _psql_cmd('-c', query, user=user, host=host, port=port)
     __salt__['cmd.run'](cmd, runas=runas)
     if not db_exists(name, user, host, port, runas=runas):
@@ -295,10 +295,7 @@ def user_create(username,
         log.info("User '{0}' already exists".format(username,))
         return False
 
-    sub_cmd = "CREATE USER {0} WITH".format(username, )
-    if password:
-        escaped_password = password.replace("'", "''")
-        sub_cmd = "{0} PASSWORD '{1}'".format(sub_cmd, escaped_password)
+    sub_cmd = 'CREATE USER "{0}"'.format(username, )
     if createdb:
         sub_cmd = "{0} CREATEDB".format(sub_cmd, )
     if createuser:
@@ -307,9 +304,9 @@ def user_create(username,
         sub_cmd = "{0} ENCRYPTED".format(sub_cmd, )
     if superuser:
         sub_cmd = "{0} SUPERUSER".format(sub_cmd, )
-
-    if sub_cmd.endswith("WITH"):
-        sub_cmd = sub_cmd.replace(" WITH", "")
+    if password:
+        escaped_password = password.replace("'", "''")
+        sub_cmd = "{0} PASSWORD '{1}'".format(sub_cmd, escaped_password)
 
     cmd = _psql_cmd('-c', sub_cmd, host=host, user=user, port=port)
     return __salt__['cmd.run'](cmd, runas=runas)
@@ -337,7 +334,7 @@ def user_update(username,
         log.info("User '{0}' does not exist".format(username,))
         return False
 
-    sub_cmd = "ALTER USER {0} WITH".format(username, )
+    sub_cmd = 'ALTER USER "{0}" WITH'.format(username, )
     if password:
         sub_cmd = "{0} PASSWORD '{1}'".format(sub_cmd, password)
     if createdb:
@@ -369,7 +366,7 @@ def user_remove(username, user=None, host=None, port=None, runas=None):
         return False
 
     # user exists, proceed
-    sub_cmd = 'DROP USER {0}'.format(username)
+    sub_cmd = 'DROP USER "{0}"'.format(username)
     cmd = _psql_cmd('-c', sub_cmd, host=host, user=user, port=port)
     __salt__['cmd.run'](cmd, runas=runas)
     if not user_exists(username, user, host, port, runas=runas):
